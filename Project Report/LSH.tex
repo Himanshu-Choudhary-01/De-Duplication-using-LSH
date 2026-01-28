@@ -1,0 +1,304 @@
+%\documentclass[11pt]{article}
+\documentclass[12pt, a4paper,twoside]{article}
+
+\usepackage[lmargin=3cm,rmargin=2.1cm,tmargin=2.4cm,bmargin=2.4cm]{geometry}
+%\usepackage[a4paper, dvips, breaklinks, colorlinks=true, linkcolor=black, citecolor=black, linktocpage=true]{hyperref}
+%\usepackage[font={small,sf},format=plain,labelfont=bf]{caption}
+
+\usepackage{amssymb,amsmath,mathtools,bm,mathrsfs}
+\usepackage{csquotes}
+\usepackage{epsfig,cite,comment,graphicx,hyperref,verbatim,multicol,setspace,subfigure}
+\DeclareMathOperator{\var}{var}
+\usepackage{enumerate}
+\usepackage{times}
+\usepackage{caption}
+\usepackage{siunitx}
+\usepackage{float}
+%\usepackage{mathtime}
+\usepackage{multicol}
+\usepackage{xcolor}
+\usepackage{bm}
+% \graphicspath{{./figures/}}
+
+%\input{docsettings.tex}
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\renewcommand{\baselinestretch}{1.20}
+\title{De duplication  Using Locality Sensitive Hashing}
+\date{}
+\definecolor{azure}{rgb}{0.0, 0.5, 1.0}
+\setlength\parindent{0pt}
+\begin{document}
+
+
+\setcounter{page}{1}
+\maketitle
+
+\section*{Introduction}
+\label{sec:introduction}
+One of the most fundamental problem of data mining is to find the \textbf{similar} item. De duplication is one example of finding similar items.\\ 
+Applications of finding  similar items:
+\begin{enumerate}
+\item Filter duplicate documents in search engine
+\item Plagiarism, mirror pages
+\item Recommend similar products, movies. 
+\end{enumerate}
+
+\section*{Problem Statement}
+The aim  of this  mini project is to implement de duplication model to find the duplicate documents from the large collection of documents via clustering using locality sensitive hashing and prune the duplicate documents.
+
+
+\section*{Background \cite{rajaraman2011mining} }
+\subsection*{Jaccard Similarity of Sets}
+Jaccard similarity is  measure of similarity between two sets. It is ratio of the intersection to  the union of two sets.\\
+ Let $S_1$ and $S_2$ are two sets, then the jaccard similarity between is defined as 
+$$ Sim(S_1 , S_2) = \frac{|S_1 \cap S_2|}{|S_1 \cup S_2|}$$
+
+\subsection*{Document to set}
+To find the lexically similar document, the most effective way is to construct the set corresponding to each document of the sub-string that appear in the document.
+The common method to model text as set are \textbf{Bag of Word Model} and \textbf{Shingle}. A Bag of Word model is an unordered collection of word, which keeps the multiplicity of the words. A more general approach is to shingle the document. This takes consecutive words and group them as a single object.
+
+\subsubsection*{k-Shingle}
+A k-shingle is consecutive sub-string of k-words(or k-characters) of the document string. The alternate name for k-shingle is k-gram. \\
+\subsection*{Jaccard similarity With Shingles} Let\\
+\textbf{D1:} De duplication  Using Locality Sensitive Hashing\\
+\textbf{D2:} Using Locality Sensitive Hashing for De duplication.\\ \\
+\textbf{The 2-shingle(word level)  for document D1 and D2 are as follow:} \\
+\textbf{D1} = \{``De duplication", ``duplication Using", ``Using Locality", ``Locality Sensitive", ``Sensitive Hashing"\} \\
+\textbf{D2}  = \{``Using Locality", ``Locality Sensitive", ``Sensitive Hashing", ``Hashing for", ``for De", ``De duplication"\}\\
+\textbf{D1} $\bm{\cap}$ \textbf{D2} = \{``De duplication', ``Using Locality", ``Locality Sensitive", ``Sensitive Hashing"\} \\
+\textbf{D1}$\bm{\cup}$\textbf{D2} =  \{``De duplication", ``duplication Using", ``Using Locality", ``Locality Sensitive", ``Sensitive Hashing", ``Hashing for", ``for De"\} \\
+
+ $$Sim(D1 , D2) = \frac{| D1 \cap D2|}{|D1 \cup D2|} = \frac{4}{7} = 0.57$$ \\
+\textbf{The 2-shingle(character level)  for document D1 and D2 are as follow:} \\
+\textbf{D1} = \{``De", ``e ", `` d", ``du", ``up", ``pl", ``li", ``ic", ``ca", ``ai", ``it", ``to", ``on", ``n ", `` U", ``Us", ``si", ``in", ``ng", ``g ", `` L", ``Lo", ``oc", ``al", ``ty", ``y ", `` S", ``Se", ``en", ``ns", ``ti", ``iv", ``ve", `` H", ``Ha", ``as",	``sh", ``hi"\} \\
+\textbf{D2}  = \{``Us", ``si", ``in", ``ng", ``g ", `` L", ``Lo", ``oc", ``ca", ``al", ``li", ``it", ``ty", ``y ", `` S", ``Se", ``en", ``ns", ``ti", ``iv", ``ve", ``e ", `` H", ``Ha", ``as", ``sh", ``hi", `` f", ``fo", ``or", ``r ", `` D", ``De", `` d", ``du", ``up", ``pl", ``ic", ``at", ``io", ``on" \}  \\
+\textbf{D1} $\bm{\cap}$ \textbf{D2} =  \{``De", ``e ", `` d", ``du", ``up", ``pl", ``li", ``ic", ``ca", ``it", ``on", ``Us", ``si", ``in", ``ng", ``g ", `` L", ``Lo", ``oc", ``al", ``ty", ``y ", `` S", ``Se", ``en", ``ns", ``ti", ``iv", ``ve", `` H", ``Ha", ``as", ``sh", ``hi"\} \\
+\textbf{D1}$\bm{\cup}$\textbf{D2} = \{``De", ``e ", `` d", ``du", ``up", ``pl", ``li", ``ic", ``ca", ``ai", ``it", ``to", ``on", ``n ", `` U", ``Us",	``si", ``in", ``ng", ``g ", `` L", ``Lo", ``oc", ``al", ``ty", ``y ", `` S", ``Se", ``en", ``ns", ``ti", ``iv", ``ve", `` H", ``Ha", ``as", ``sh", ``hi", `` f", ``fo", ``or", ``r ", `` D", ``at", ``io"\} \\
+ 
+$$Sim(D1 , D2) = \frac{|D1 \cap D2|}{|D1 \cup D2|} = \frac{34}{45} = 0.7556$$ \\
+
+\textbf{Model Choice}\\
+There are different model choices which are based on the application context :
+\begin{enumerate}
+	\item \textbf{White space?} Should we include spaces, and returns?  Sometimes.plane has touch down versus threw a touchdown.
+	\item \textbf{Capitalization?} Hashing versus hashing. Can help distinguish proper nouns.
+	\item \textbf{Punctuation?} May be indication of education level, or dialects.  For instance English is punctuated differently in US and India.  Punctuation is used differently in new articles (very proper style), blogs(more informal), and twitter (what is punctuation?).
+	\item \textbf{Characters vs. Words?} Long enough shingles with characters can simulate words, but will have more false positives. Can pick up other dialect patterns. But is less interpretable.
+	\item \textbf{How large should  $k$ be?}
+	\item \textbf{Stopping Words?} Words like \{a, you, for, the, to, and, that, it, is, ...\} are very common, and called stop words.  Sometimes omit these (typically in bag of words).
+\end{enumerate}
+
+\textbf{Characteristic Matrix  of Document sets:}
+For above example of 2-shingle( word level ) the characteristic matrix is as follow: \\
+\begin{table}[H]
+\begin{center}
+\setstretch{1.5}
+\begin{tabular}{|c|c|c|}
+\hline
+$\bm{D1 \cup D2}$ &$\bm{ D1}$ &$\bm{ D2}$\\
+\hline
+``De duplication"&1 & 1 \\
+\hline
+``duplication Using"& 1  & 0 \\
+\hline
+``Using Locality" & 1 & 1\\
+\hline
+``Locality Sensitive"&1 & 1\\
+\hline
+``Sensitive Hashing"& 1 & 1 \\
+\hline
+``Hashing for"& 0 & 1 \\
+\hline
+``for De"& 0 & 1 \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+For large collection of documents, the columns of the characteristic matrix become sparse and large, so its too difficult to handle document sets efficiently .\\
+So our goal is to compute a “signature” for each document set, so that similar documents have similar signatures (and dissimilar docs are unlikely to have similar signatures). \\
+\subsubsection*{Hashing}
+The idea of hashing is to convert each document to a small signature using a hashing function H. Suppose a document in our corpus is denoted by d. Then:
+\begin{itemize}
+\item H(d) is the signature and it’s small enough to fit in memory
+\item   If similarity(d1,d2) is high then Probability(H(d1)==H(d2)) is high
+\item    If similarity(d1,d2) is low then Probability(H(d1)==H(d2)) is low
+\end{itemize}
+Choice of hashing function is tightly linked to the similarity metric we’re using. For Jaccard similarity the appropriate hashing function is min-hashing.
+
+\subsubsection*{Min-Hashing}
+\textbf{Minhash(\bm{$\pi$})} of a set is the number of the row (element) with first non-zero in the \textbf{permuted order \bm{$\pi$}}.\\
+\textbf{Min-Hash Signature}: Let \{h1, h2, ..., hn\} be different minhash functions (i.e. different permutations).\\ Then signature for set S is:  
+$$SIG(S) = [h1(S),  h2(S), ...,  hn(S)]$$ 
+
+Let $S1$ and $S2$ are two sets then the jaccard similarity is $S1$ and $S2$ in terms of signature is:
+\begin{center}
+ \textbf{SIM(S1,S2) $\approx$ ratio of equal elements of SIG(S1) and SIG(S2) }
+\end{center}
+~\\ ~\\
+\textbf{MinHasing Algorithm}
+\begin{verbatim}
+For each row r = 0, 1, ..., N-1 of the characteristic matrix:
+1. Compute h1(r), h2(r), ..., hn(r) 
+2. For each column c: 
+   1. If column c has 0 in row r,  do nothing 
+   2. Otherwise, for each i = 1,2, ..., n set
+                  SIG(i, c) to be min(hi(r), SIG(i, c)) 
+\end{verbatim}
+
+\subsubsection*{Locality Sensitive Hashing}
+The basic idea of locality sensitive hashing to use a function f(x,y) that tells whether x and y is a candidate pair(i.e. a pair of elements whose similarity must be evaluated).\\
+
+\textbf{Method to find such $\bm{f}$ from Min-hash Signature matrix:}
+\begin{enumerate}
+\item Divide the rows of signature matrix in $b$ band having $r$ rows.
+\begin{figure}[H]
+\begin{center}
+\includegraphics[scale = 0.5]{images//bands.png}
+\caption*{\textbf{Source:} J. Leskovec, A. Rajaraman, J. Ullman: Mining of Massive Datasets}
+\end{center}
+\end{figure}
+
+\item For each band hash the column in k buckets, buckets contains column pairs if there are identical in particular band and the pair of a bucket are called \textbf{candidate pairs}
+\begin{figure}[H]
+\begin{center}
+\includegraphics[scale = 0.5]{images//buckets.png}
+\caption*{\textbf{Source:} J. Leskovec, A. Rajaraman, J. Ullman: Mining of Massive Datasets}
+\end{center}
+\end{figure}
+
+\item Tune value of b and r such that similar columns goes to same bucket with high probability and dissimilar columns goes to same bucket with less probability. 
+\end{enumerate}
+
+\textbf{Interpretation of b bands for r rows:}
+\begin{itemize}
+\item We want that for column whose similarity is greater than threshold t will goes to same bucket with probability 1 .
+\begin{figure}[H]
+\begin{center}
+\includegraphics[scale = 0.5]{images//img1.png}
+\caption*{\textbf{Source:} J. Leskovec, A. Rajaraman, J. Ullman: Mining of Massive Datasets}
+\end{center}
+\end{figure}
+
+\item For $b = 1$ and $r = 1$:
+\begin{figure}[H]
+\begin{center}
+\includegraphics[scale = 0.5]{images//img2.png}
+\caption*{\textbf{Source:} J. Leskovec, A. Rajaraman, J. Ullman: Mining of Massive Datasets}
+\end{center}
+\end{figure}
+
+\item For $b$ bands and $r$ rows:
+\begin{figure}[H]
+\begin{center}
+\includegraphics[scale = 0.5]{images//img3.png}
+\caption*{\textbf{Source:} J. Leskovec, A. Rajaraman, J. Ullman: Mining of Massive Datasets}
+\end{center}
+\end{figure}
+
+\end{itemize}
+
+
+
+\section*{Experimental Study and Results}
+To check the Working and performance of the implemented locality sensitive hashing algorithm, \textbf{20 Newsgroup} text data set containing $600$ hundred text files is taken in consideration. The actual truth about the data set is not known, so to find the actual truth first we computed the jaccard similarity of all combinations of text files, and those having jaccard similarity greater than $0.55$, kept in one bucket/cluster representing the duplicates.We found $8$ such clusters and are as follow:
+
+\begin{table}[H] \label{table1}
+\begin{center}
+\setstretch{1.5}
+\caption{Actual Truth}
+\begin{tabular}{|c|c|}
+\hline
+Cluster Number & File ID's\\
+\hline
+1              & \textbf{[51150, 51240]} \\
+2              & \textbf{[51270, 51307]}\\
+3              & \textbf{[53072, 53178]}\\
+4              & \textbf{[37917, 37950]}\\
+5              & \textbf{[38216, 38255]}\\
+6              & \textbf{[38227, 38330]}\\
+7              & \textbf{[38320, 38432]}\\
+8              & \textbf{[38438, 38442, 38458]}\\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\subsection*{LSH Parameters Values}
+Results for following  experimental setting are as follow :
+\begin{itemize}
+\item k (for k-shingle) = 5
+\item Total number of hash functions for Min-hashing = 100
+\item Number of bands ($b$) = 10
+\item Number of rows in a band  ($r$) = 6
+\end{itemize}
+
+For the above setting for LSH we got $\bm{11}$ clusters and are as follow:
+\begin{table}[H] 
+\label{table2}
+\begin{center}
+\setstretch{2.5}
+\caption{Predicted Duplicates}
+\begin{tabular}{|c|c|}
+\hline
+Cluster Number & File ID's \\
+\hline
+\textcolor{azure}{1}             & \textcolor{azure}{\textbf{[38227, 38330]}} \\
+\textcolor{azure}{2}             & \textcolor{azure}{\textbf{[37917, 37950]}} \\
+\textcolor{red}{3}               & \textcolor{red}{\textbf{[38354, 38366]}} \\
+\textcolor{red}{4}               & \textcolor{red}{\textbf{[38435, 38457]}} \\
+\textcolor{red}{5}               & \textcolor{red}{\textbf{[53117, 53134]}} \\
+\textcolor{red}{6}               & \textcolor{red}{\textbf{[53174, 53195]}}\\\
+\textcolor{azure}{7 }            & \textcolor{azure}{\textbf{[38438, 38442, 38458]}} \\
+\textcolor{red}{8}               & \textcolor{red}{\textbf{[51186, 51210]}} \\
+\textcolor{red}{9}               & \textcolor{red}{\textbf{[38396, 38461]}} \\
+\textcolor{azure}{10}            & \textcolor{azure}{\textbf{[53072, 53178]}} \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+In above table the blue colour cluster are correct one i.e. having jaccard similarity greater than $0.55$ and the red colour clusters are false positive i.e. clusters whose actual jaccard similarity is less $0.55$ but predicted as duplicate by LSH. \\
+Form table [\textbf{1}] and [\textbf{2}], we can see that LSH is able to cluster only $4$ duplicates clusters correctly out of $8$. \\
+
+
+On repeating the same experiment for same  above setting  we got $\bm{15}$ clusters and are as follow:
+\begin{table}[H] 
+\label{table2}
+\begin{center}
+\setstretch{1.5}
+\caption{Predicted Duplicates}
+\begin{tabular}{|c|c|}
+\hline
+Cluster Number & File ID's \\
+\hline
+\textcolor{azure}{1}  & \textcolor{azure}{\textbf{[51150, 51240]}} \\
+\textcolor{red}{2}    & \textcolor{red}{\textbf{[53174, 53195]}}   \\
+\textcolor{red}{3}    & \textcolor{red}{\textbf{[37941, 37960]}}    \\
+\textcolor{azure}{4}  & \textcolor{azure}{\textbf{[38320, 38432]}}   \\
+\textcolor{azure}{5}  & \textcolor{azure}{\textbf{[53072, 53178]}}  \\
+\textcolor{red}{6}    & \textcolor{red}{\textbf{[38442, 38458]}}     \\
+\textcolor{red}{7}    & \textcolor{red}{\textbf{[51197, 51198]}}   \\
+\textcolor{red}{8 }   & \textcolor{red}{\textbf{[53064, 38099]}}    \\
+\textcolor{red}{9 }   & \textcolor{red}{\textbf{[38217, 38330]}}    \\
+\textcolor{red}{10}   & \textcolor{red}{\textbf{[51290, 51304]}}     \\
+\textcolor{red}{11}   & \textcolor{red}{\textbf{[51197, 51258]}}     \\
+\textcolor{red}{12}   & \textcolor{red}{\textbf{[38217, 38227]}}     \\
+\textcolor{red}{13}   & \textcolor{red}{\textbf{[51194, 51277]}}      \\
+\textcolor{azure}{14} & \textcolor{azure}{\textbf{[38216, 38255]}}     \\
+\textcolor{red}{15}   & \textcolor{red}{\textbf{[53173, 53191]}}        \\
+\textcolor{red}{16}   & \textcolor{red}{\textbf{[38217, 38227, 38330]}} \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+Form table [\textbf{1}] and [\textbf{3}], we can see that LSH is able to cluster only $4$ duplicates out off which one is similar as correctly detected in talble[\textbf{2}].
+Hence, we are able to get $\bm{7}$ duplicates out off $\bm{8}$  only in $\bm{2}$ runs of the \textbf{LSH} algorithm and only in $\bm{26}$ pair comparisons.
+ \begin{singlespacing}
+{
+\bibliographystyle{ieeetr}
+\bibliography{references}
+}
+\end{singlespacing}
+
+\end{document}
+
